@@ -237,13 +237,13 @@ class filter_recitactivity extends moodle_text_filter {
             $completiondata->completionstate = 0;
             $completiondata->viewed = 0;
             $completiondata->overrideby = null;
-            $completiondata->timemodified = 0;
+            $completiondata->timemodified = 0;           
 
             if (isset($this->cmcompletions[$cm->__get('id')])) {
                 $completiondata = $this->cmcompletions[$cm->__get('id')];
             }
 
-            $cmcompletion = $this->course_section_cm_completion($cm, $completiondata);
+            $cmcompletion = $this->getCmCompletionCheckbox($cm, $completiondata);
             $isrestricted = (!$cm->__get('uservisible') || !empty($cm->availableinfo) || ($cm->__get('visible') == 0));
             if ($this->is_teacher) {
                 $isrestricted = false;
@@ -258,6 +258,8 @@ class filter_recitactivity extends moodle_text_filter {
             $courseactivity->cmcompletion = $cmcompletion;
             $courseactivity->id = $cm->__get('id');
             $courseactivity->uservisible = $cm->uservisible;
+            $courseactivity->cmInfo = $cm;
+            $courseactivity->completiondata = $completiondata;
 
             if ($isrestricted) {
                 $courseactivity->href_tag_begin = html_writer::start_tag('a', array('class' => "$class disabled ",
@@ -513,7 +515,6 @@ class filter_recitactivity extends moodle_text_filter {
                     }
                     break;
                 case "d":
-
                     if ($complement == "user.firstname") {
                         $result = str_replace($match, $USER->firstname, $result);
                     } else if ($complement == "user.lastname") {
@@ -547,6 +548,9 @@ class filter_recitactivity extends moodle_text_filter {
                             }
                         }
                     }
+                    break;
+                case "f":
+                    $this->filterOptionFeedback($complement, $param, $attributes, $match, $result);   
                     break;
             }
         }
@@ -599,14 +603,14 @@ class filter_recitactivity extends moodle_text_filter {
      *
      * @param cm_info $mod
      * @param object $completiondata
+     * @return int 0 = no completion, 1 = not completed, 2 = completed
      */
-    public function course_section_cm_completion(cm_info $mod, $completiondata) {
-        global $CFG, $PAGE;
+    public function getCmCompletion(cm_info $mod, $completiondata) {
+        global $CFG;
         $course = $this->page->course;
 
-        $output = '';
         if (!$mod->__get('uservisible')) {
-            return $output;
+            return 0;
         }
         
         $completion = $mod->__get('completion'); // Return course-module completion value
@@ -619,45 +623,52 @@ class filter_recitactivity extends moodle_text_filter {
             $completion = COMPLETION_DISABLED;
         }
         
-        if ($completion == COMPLETION_TRACKING_NONE) {
-            if ($PAGE->user_is_editing()) {
-                $output .= html_writer::span('&nbsp;', 'filler');
-            }
-            return $output;
+        if ($completion == COMPLETION_TRACKING_NONE) {            
+            return 0;
         }
 
-        $completionicon = '';
+        $result = 1;
 
         if ($completion == COMPLETION_TRACKING_MANUAL) {
             switch ($completiondata->completionstate) {
                 case COMPLETION_INCOMPLETE:
-                    $completionicon = 'fa-square-o';
+                    $result = 1;
                     break;
                 case COMPLETION_COMPLETE:
-                    $completionicon = 'fa-check-square-o';
+                    $result = 2;
                     break;
             }
         } else { // Automatic.
             switch ($completiondata->completionstate) {
                 case COMPLETION_INCOMPLETE:
-                    $completionicon = 'fa-square-o';
+                case COMPLETION_COMPLETE_FAIL:
+                    $result = 1;
                     break;
                 case COMPLETION_COMPLETE:
-                    $completionicon = 'fa-check-square-o';
-                    break;
                 case COMPLETION_COMPLETE_PASS:
-                    $completionicon = 'fa-check-square-o';
-                    break;
-                case COMPLETION_COMPLETE_FAIL:
-                    $completionicon = 'fa-square-o';
+                    $result = 2;
                     break;
             }
         }
-        if ($completionicon) {
-                $output .= "<i class='fa $completionicon'></i>";
-        }
-        return $output;
+        
+        return $result;
+    }
 
+    protected function getCmCompletionCheckbox(cm_info $mod, $completiondata){
+        global $PAGE;
+
+        $output = '';
+        if ($PAGE->user_is_editing()) {
+            $output .= html_writer::span('&nbsp;', 'filler');
+        }
+
+        $cmCompletion = $this->getCmCompletion($mod, $completiondata);
+        if($cmCompletion != 0){
+            $completionicon = ($cmCompletion == 2 ? 'fa-check-square-o' : 'fa-square-o');
+            $output .= "<i class='fa $completionicon'></i>";
+        }
+
+        return $output;
     }
 
     /**
@@ -676,5 +687,75 @@ class filter_recitactivity extends moodle_text_filter {
         }
 
         return sprintf("<img %s style='width: 16px; height: 16px;'/>", implode(" ", $attrs));
+    }
+
+    protected function filterOptionFeedback($complement, $param, $attributes, $match, &$result){
+        $this->load_cm_completions();
+        $activity = $this->get_course_activity($complement, $param, $attributes);
+
+        if($activity == null){
+            return;
+        }
+
+        $cmCompletion = $this->getCmCompletion($activity->cmInfo, $activity->completiondata);
+
+        // cm is completed, nothing to display
+        if($cmCompletion == 2){
+            $result = str_replace($match, "", $result);
+            return;
+        }
+
+        // cm is not available, nothing to display
+        if(!$this->isCmAvailable($activity->cmInfo)){ 
+            $result = str_replace($match, "", $result);
+            return;
+        }
+
+        $pageContent = $this->getModulePageContent($activity->cmInfo);
+
+        $dismissButton = "";
+
+        // cm is not completed or has no completion option
+        if($cmCompletion == 1){
+            $dismissButton = '<button class="btn btn-sm text-nowrap btn-outline-secondary m-2" data-action="toggle-manual-completion" data-toggletype="manual:mark-done" 
+            data-withavailability="1" data-cmid="'.$activity->cmInfo->id.'"  data-activityname="Ignore"  
+            title='.get_string('dismissMsg','filter_recitactivity').'  aria-label='.get_string('dismissMsg','filter_recitactivity').'>'.get_string('dismissMsg','filter_recitactivity').'</button>';           
+        }
+
+        if (isset($attributes['popup'])){
+            $result = str_replace($match, "<div style='display:none' data-filter-recitactivity='feedback'><div>$pageContent</div><div>$dismissButton</div></div>", $result);
+        }
+        else{  
+            $cssClasses = (isset($attributes['class']) ? $attributes['class'] : "");
+            $html = "<div class='$cssClasses'>$pageContent $dismissButton</div>";
+            $result = str_replace($match, $html, $result);
+        }
+    }
+
+    protected function getModulePageContent(cm_info $cmInfo){
+        global $DB;
+
+        if (!$cm = get_coursemodule_from_id('page', $cmInfo->id)) {
+            throw new \moodle_exception('invalidcoursemodule');
+        }
+
+        $page = $DB->get_record('page', array('id'=>$cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cm->id);
+        
+        $content = file_rewrite_pluginfile_urls($page->content, 'pluginfile.php', $context->id, 'mod_page', 'content', $page->revision);
+        $formatoptions = new stdClass; 
+        $formatoptions->noclean = true;
+        $formatoptions->overflowdiv = true;
+        $formatoptions->context = $context;
+        return format_text($content, $page->contentformat, $formatoptions);
+    }
+
+    protected function isCmAvailable(cm_info $cmInfo){
+        global $USER;
+
+        $info = new \core_availability\info_module($cmInfo);
+
+        $str = "";
+        return $info->is_available($str, false, $USER->id);
     }
 }
