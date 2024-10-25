@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Activity name filtering version control.
+// Activity name filtering.
 
 /**
  * This filter must be put before Auto-linking with Manage Filters to work properly.
@@ -23,12 +23,10 @@
  * @copyright  2019 RECIT
  * @license    {@link http://www.gnu.org/licenses/gpl-3.0.html} GNU GPL v3 or later
  */
+namespace filter_recitactivity;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2024090400;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2020061500.00; // Moodle 3.9.0
-$plugin->component = 'filter_recitactivity'; // Full name of the plugin (used for diagnostics)
-$plugin->release = 'v1.20.0-stable';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->supported = [39, 405];      //  Moodle 3.9.x, 3.10.x, 3.11.x and 4.0.x are supported.
+require_once(__DIR__."/classes/text_filter.php");
+
+class_alias(\filter_recitactivity\text_filter::class, filter_recitactivity::class);
