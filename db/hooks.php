@@ -14,21 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Activity name filtering.
-
 /**
- * This filter must be put before Auto-linking with Manage Filters to work properly.
+ * Hook callbacks for filter_recitactivity
  *
  * @package    filter_recitactivity
- * @copyright  2019 RECIT
- * @license    {@link http://www.gnu.org/licenses/gpl-3.0.html} GNU GPL v3 or later
+ * @copyright  2024 RECITFAD
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// WARNING: this namespace should not be defined for Moodle 4.3 and lower versions for compatibility reasons.
-//namespace filter_recitactivity; 
- 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__."/classes/text_filter.php");
-
-class_alias(\filter_recitactivity\text_filter::class, filter_recitactivity::class);
+$callbacks = [
+    [
+        'hook' => \core\hook\output\before_standard_top_of_body_html_generation::class,
+        'callback' => \filter_recitactivity\hook_callbacks::class . '::before_standard_top_of_body_html_generation',
+        'priority' => 0,
+    ]    
+];
