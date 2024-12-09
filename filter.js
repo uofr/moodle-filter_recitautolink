@@ -21,11 +21,16 @@
  * @license    {@link http://www.gnu.org/licenses/gpl-3.0.html} GNU GPL v3 or later
  */
  
-var recit = recit || {};
-recit.filter = recit.filter || {};
-recit.filter.autolink = recit.filter.autolink || {};
+M.recit = M.recit || {};
+M.recit.filter = M.recit.filter || {};
+M.recit.filter.autolink = M.recit.filter.autolink || {};
 
-recit.filter.autolink.Popup = class {
+M.recit.filter.autolink.state = {
+    loadQRCodes: false,
+    loadPopupFeedback: false
+}
+
+M.recit.filter.autolink.Popup = class {
     constructor(content, showTitle, showFooter, maxWidth) {
 
         showTitle = (typeof showTitle === 'undefined' ? true : showTitle);
@@ -56,6 +61,7 @@ recit.filter.autolink.Popup = class {
             btn.classList.add('close');
             btn.innerHTML = '<span aria-hidden="true">&times;</span>';
             btn.setAttribute('data-dismiss', 'modal');
+            btn.onclick = this.destroy.bind(this);
             header.appendChild(this.title);
             header.appendChild(btn);
         }
@@ -74,29 +80,40 @@ recit.filter.autolink.Popup = class {
         }
 
         document.body.appendChild(this.modal);
-        $(this.modal).modal({show: true, backdrop: true});
+        /*$(this.modal).modal({show: true, backdrop: true});
 
         let that = this;
         $(".modal-backdrop").click(() => $(this.modal).modal('hide'));
         $(this.modal).on('hidden.bs.modal', function (e) {
             that.destroy()
-        })
+        })*/
+        this.modal.classList.add('show');
+
+        this.backdrop = document.createElement('div');
+        this.backdrop.classList.add('modal-backdrop', 'fade', 'show');
+        this.backdrop.setAttribute('data-backdrop', 'static');
+        document.body.appendChild(this.backdrop);
       }
+
       destroy(){
-          this.modal.remove();
+            this.modal.classList.remove('show');
+            this.backdrop.classList.remove('show');
+            this.modal.remove();
+            this.backdrop.remove();
       }
+      
       update(){
-        $(this.modal).modal('handleUpdate');
+        //$(this.modal).modal('handleUpdate');
       }
 }
 
-recit.filter.autolink.popupIframe = function(url, className){
+M.recit.filter.autolink.popupIframe = function(url, className){
     let content = document.createElement('iframe');
     content.src = url;
-    let popup = new recit.filter.autolink.Popup(content, true);
+    let popup = new M.recit.filter.autolink.Popup(content, true);
    
     if (className.length > 0){
-        popup.popup.classList.add(className);
+        popup.modal.classList.add(className);
     }
 
     content.onload = () => {
@@ -115,12 +132,12 @@ recit.filter.autolink.popupIframe = function(url, className){
             content.contentWindow.document.head.appendChild(style);
         }
 
-        popup.update();
+        //popup.update();
     }
 }
 
-recit.filter.autolink.popupFeedback = function(content, dismissButton){
-    let popup = new recit.filter.autolink.Popup(null, false, true, false);
+M.recit.filter.autolink.popupFeedback = function(content, dismissButton){
+    let popup = new M.recit.filter.autolink.Popup(null, false, true, false);
 
     popup.dialog.classList.add('modal-xl'); 
     popup.body.appendChild(content); 
@@ -128,23 +145,50 @@ recit.filter.autolink.popupFeedback = function(content, dismissButton){
     popup.update();   
 }
 
-function filter_recitactivity_init_vars(_, settings){ 
-    let counter = 0;
-    let timer = function(){
-        let elList = document.querySelectorAll('div[data-filter-recitactivity="feedback"]');
-        if(elList.length > 0){
-            for(let el of elList){
-                recit.filter.autolink.popupFeedback(el.childNodes[0], el.childNodes[1]);
-            }
-        }
-        else if(counter >= 3){
-            console.log("filter_recitactivity JS finished.");
+M.recit.filter.autolink.loadQRCodes = function(){
+    if(M.recit.filter.autolink.state.loadQRCodes){
+        return;
+    }
+
+    let placeholders = document.querySelectorAll("[data-qrcode-url]");
+
+    for(let item of placeholders){
+        let options = {text: item.getAttribute('data-qrcode-url'), width: 256, height: 256};
+
+        if(item.getAttribute('data-width') === '100%'){
+            options.width = window.innerWidth;
+            options.height = window.innerWidth;
+
+            new QRCode(item, options);
+
+            let img = item.querySelector('img');
+            img.style.width = '100%';
         }
         else{
-            counter++;
-            window.setTimeout(timer, 500);
-            console.log("filter_recitactivity JS starting...");
+            new QRCode(item, options);
         }
+
+        M.recit.filter.autolink.state.loadQRCodes = true;
     }
-    window.setTimeout(timer, 500);
 }
+
+M.recit.filter.autolink.loadOptionFeedback = function(){
+    if( M.recit.filter.autolink.state.loadPopupFeedback){
+        return;
+    }
+
+    let elList = document.querySelectorAll('div[data-filter-recitactivity="feedback"]');
+    for(let el of elList){
+        M.recit.filter.autolink.popupFeedback(el.childNodes[0], el.childNodes[1]);
+        M.recit.filter.autolink.state.loadPopupFeedback = true;
+    }
+}
+
+M.recit.filter.autolink.loadLazyOptions = function(){
+    M.recit.filter.autolink.loadQRCodes();
+    M.recit.filter.autolink.loadOptionFeedback();
+}
+
+document.addEventListener('DOMContentLoaded', function(){ 
+    M.recit.filter.autolink.loadLazyOptions();
+}, false);
