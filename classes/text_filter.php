@@ -335,7 +335,7 @@ class text_filter extends ParentClass {
         }
         else{
             if (isset($options['popup'])){
-                $url = 'javascript:recit.filter.autolink.popupIframe("'.$url.'&autolinkpopup=1", "'.$options['popupclass'].'");';
+                $url = 'javascript:M.recit.filter.autolink.popupIframe("'.$url.'&autolinkpopup=1", "'.$options['popupclass'].'");';
             }
     
             if (isset($options['completion']) && ($options['completion'] == true)){
