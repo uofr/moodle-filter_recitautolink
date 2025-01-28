@@ -535,6 +535,12 @@ class text_filter extends ParentClass {
                 case "h5p":
                     $this->filterOptionH5P($complement, $match, $result);
                     break;
+                case "url":
+                    $attributes['completion'] = false;
+                    $attributes['icon'] = false;
+                    $attributes['param'] = 'url';
+                    $this->filterOptionLink($complement, $attributes, $match, $result);
+                    break;
                 case "d":
                     $this->filterOptionUserData($complement, $match, $result);
                     break;
@@ -692,8 +698,13 @@ class text_filter extends ParentClass {
         $activity = $this->get_course_activity($complement, $attributes);
         if ($activity != null) {
             if(!$this->shouldHideIntCode($activity, $match, $result)){
-                $result = str_replace($match, $activity->output->autolink, $result);
-            }
+				if ($attributes['param'] == 'url') {
+					$result = str_replace($match, $activity->output->url, $result);
+				} else {
+                	$result = str_replace($match, $activity->output->autolink, $result);
+				}	
+            
+			}
         }
     }
 
