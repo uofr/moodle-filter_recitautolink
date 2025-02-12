@@ -37,29 +37,13 @@ use cm_info;
 use html_writer;
 use moodle_url;
 
-class Utils
-{
-    public static function moodle405(){
-        global $CFG;
-
-        return ($CFG->version >= 2024071200.00);
-    }
-}
-
-if(Utils::moodle405()){
-    $result = class_alias(\core_filters\text_filter::class, ParentClass::class);
-}
-else{
-    $result = class_alias(\moodle_text_filter::class, ParentClass::class);
-}
-
 /**
  * Main class for filtering text.
  *
  * Attention: do not utilise the global variables $PAGE and $COURSE. Instead, use $this->page and $this->page->course.
  * When the filter is used by some ajax service (like TreeTopics) the global variables are not set as it should but $this->page is so.
  */
-class text_filter extends ParentClass {
+class text_filter extends \core_filters\text_filter{
     /** @var array teachers list */
     protected $teacherslist = array();
     /** @var array */
@@ -328,9 +312,9 @@ class text_filter extends ParentClass {
             }
             
             if (strlen($messageRestricted) > 0) {
-                $restrictioninfo .= "<button type='button' class='btn btn-sm btn-link' data-html='true' data-container='body' title='".get_string('restricted')."' data-toggle='popover' data-placement='bottom' data-content=\"$messageRestricted\">";
+                $restrictioninfo .= "<a tabindex='0' role='button' class='btn btn-sm btn-link' data-toggle='popover' data-trigger='focus' data-html='true' data-content=\"$messageRestricted\" data-original-title='".get_string('restricted')."' data-placement='bottom' >";
                 $restrictioninfo .= "<i class='fa fa-info-circle'></i>";
-                $restrictioninfo .= "</button>";
+                $restrictioninfo .= "</a>";
             }
         }
         else{
@@ -742,9 +726,9 @@ class text_filter extends ParentClass {
             $infoMsg = $renderer->section_availability($section);
             $infoMsg = htmlspecialchars($infoMsg);
             
-            $availableInfo = sprintf("<button type='button' class='btn btn-sm btn-link' data-html='true' title='%s' data-container='body' data-toggle='popover' data-placement='bottom' data-content=\"%s\">", get_string('restricted'), $infoMsg);
+            $availableInfo = sprintf("<a tabindex='0' role='button' class='btn btn-sm btn-link' data-trigger='focus' data-html='true' data-original-title='%s' data-toggle='popover' data-placement='bottom' data-content=\"%s\">", get_string('restricted'), $infoMsg);
             $availableInfo .= "<i class='fa fa-info-circle'></i>";
-            $availableInfo .= "</button>";
+            $availableInfo .= "</a>";
             $class .= " disabled";
         }
         
@@ -793,8 +777,8 @@ class text_filter extends ParentClass {
             $result = str_replace($match, $COURSE->fullname, $result);
         } else {
             if (empty($this->teacherslist) && substr($complement, 0, 8) == "teacher1"){                            
-                $result = str_replace($match, "($match <button type='button' class='btn btn-sm btn-link' data-html='true' title='' data-container='body' data-toggle='popover' data-placement='bottom' 
-                                                        data-content='".get_string('noteacheringroup','filter_recitactivity')."' data-original-title=''><i class='fa fa-info-circle'></i></button></button>", $result);
+                $result = str_replace($match, "($match <a tabindex='0' role='button' class='btn btn-sm btn-link' data-html='true'  data-toggle='popover' data-placement='bottom' 
+                                                        data-trigger='focus' data-content='".get_string('noteacheringroup','filter_recitactivity')."' data-original-title=''><i class='fa fa-info-circle'></i></a>", $result);
             }
             foreach ($this->teacherslist as $index => $teacher) {
                 $nb = $index + 1;
