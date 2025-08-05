@@ -53,4 +53,4 @@ $string['character_desc'] = 'Represents the separator character used in the filt
     </ul>
 	';
     $string['dismissMsg'] = 'Dismiss';
-    
+    $string['close'] = 'Close';

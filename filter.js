@@ -32,6 +32,7 @@ M.recit.filter.autolink.state = {
 
 M.recit.filter.autolink.Popup = class {
     constructor(content, showTitle, showFooter, maxWidth) {
+        this.title = null;
 
         showTitle = (typeof showTitle === 'undefined' ? true : showTitle);
         showFooter = (typeof showFooter === 'undefined' ? false : showFooter);
@@ -45,7 +46,7 @@ M.recit.filter.autolink.Popup = class {
         }
 
         this.dialog = document.createElement('div');
-        this.dialog.classList.add('modal-dialog', 'modal-dialog-centered');
+        this.dialog.classList.add('modal-dialog', 'modal-dialog-centered', 'modal-dialog-scrollable');
         this.modal.appendChild(this.dialog);
 
         let inner = document.createElement('div');
@@ -68,6 +69,7 @@ M.recit.filter.autolink.Popup = class {
 
         this.body = document.createElement('div');
         this.body.classList.add('modal-body');
+        this.body.style.scrollbarWidth = "thin";
         inner.appendChild(this.body);
         if(content !== null){
             this.body.appendChild(content);
@@ -140,8 +142,14 @@ M.recit.filter.autolink.popupFeedback = function(content, dismissButton){
     let popup = new M.recit.filter.autolink.Popup(null, false, true, false);
 
     popup.dialog.classList.add('modal-xl'); 
-    popup.body.appendChild(content); 
+    popup.body.appendChild(content);     
     popup.footer.appendChild(dismissButton); 
+
+    let el = dismissButton.querySelector('[data-close-modal]')
+    if(el){
+        el.onclick = popup.destroy.bind(popup);
+    }
+
     popup.update();   
 }
 
