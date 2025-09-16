@@ -723,9 +723,11 @@ class text_filter extends \core_filters\text_filter{
         if ($isrestricted) {
             $courseFormat = course_get_format($COURSE);
             $renderer = $courseFormat->get_renderer($PAGE);
-            $infoMsg = $renderer->section_availability($section);
+            //remove section_availability since it is deprecated 4.0
+            $availabilityoutput = new \core_courseformat\output\local\content\section\availability($courseFormat, $section);    
+            $infoMsg = $renderer->render($availabilityoutput);
             $infoMsg = htmlspecialchars($infoMsg);
-            
+
             $availableInfo = sprintf("<a tabindex='0' role='button' class='btn btn-sm btn-link' data-trigger='focus' data-html='true' data-original-title='%s' data-toggle='popover' data-placement='bottom' data-content=\"%s\">", get_string('restricted'), $infoMsg);
             $availableInfo .= "<i class='fa fa-info-circle'></i>";
             $availableInfo .= "</a>";
