@@ -720,7 +720,7 @@ class text_filter extends \core_filters\text_filter{
         $isrestricted = (!$this->is_teacher) && !is_null($section->availability) && !$section->available;
 
         $availableInfo = "";
-        if ($isrestricted) {
+        if ($isrestricted && $COURSE->id!=1) {
             $courseFormat = course_get_format($COURSE);
             $renderer = $courseFormat->get_renderer($PAGE);
             //remove section_availability since it is deprecated 4.0
