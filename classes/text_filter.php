@@ -699,7 +699,7 @@ class text_filter extends \core_filters\text_filter{
 
         if($section == null){
             return;
-        }
+        }	
 
         $sectionname = (empty($section->name) ?  get_string('section') . ' ' . strval($section->section) : format_string($section->name));
         $title = $sectionname;
@@ -720,8 +720,8 @@ class text_filter extends \core_filters\text_filter{
         $isrestricted = (!$this->is_teacher) && !is_null($section->availability) && !$section->available;
 
         $availableInfo = "";
-        if ($isrestricted && $COURSE->id!=1) {
-            $courseFormat = course_get_format($COURSE);
+        if ($isrestricted) {
+            $courseFormat = course_get_format($section->course); // Can't assume the section is in the current course
             $renderer = $courseFormat->get_renderer($PAGE);
             //remove section_availability since it is deprecated 4.0
             $availabilityoutput = new \core_courseformat\output\local\content\section\availability($courseFormat, $section);    
@@ -736,7 +736,7 @@ class text_filter extends \core_filters\text_filter{
         
         $tagattr = array('class' => 'autolink '.$class, 'title' => $title, 'target' => $options['target'], 'onclick' => 'this.search == document.location.search && setTimeout(location.reload.bind(location), 50)');
         $href = "#";
-        $href = new moodle_url('/course/view.php', array('id' => $this->page->course->id, 'section' => $section->section), $anchor);
+        $href = new moodle_url('/course/view.php', array('id' => $section->course, 'section' => $section->section), $anchor);
         
         $link = html_writer::link($href, $sectionname, $tagattr);
         
