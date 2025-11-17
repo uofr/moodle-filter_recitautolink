@@ -54,4 +54,4 @@ $string['character_desc'] = 'Ceci repésente le caractère séparateur à utilis
 	';
 
     $string['dismissMsg'] = 'Ne plus afficher';
-    
+    $string['close'] = 'Fermer';

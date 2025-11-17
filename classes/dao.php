@@ -22,6 +22,9 @@
  * @license    {@link http://www.gnu.org/licenses/gpl-3.0.html} GNU GPL v3 or later
  */
 
+namespace filter_recitactivity;
+use context_course;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -35,21 +38,33 @@ class filter_recitactivity_dao {
       * This function gets all teachers for a course.
       *
       * @param int $courseid
-      * @param bool $group
+      * @param bool $showteacherbygroup
       */
-    public function load_course_teachers($courseid, $group = false) {
+    public function load_course_teachers($courseid, $showteacherbygroup = false) {
         global $USER;
         
-        if ($group){
+        $groups = array();
+        $coursecontext = context_course::instance($courseid);
+
+        $allTeachers = get_users_by_capability($coursecontext, 'filter/recitactivity:teacher', '', 'u.firstname ASC', '', '', $groups, null, false);
+        $allTeachers = array_values($allTeachers);
+        
+        if ($showteacherbygroup){
             $groups = groups_get_user_groups($courseid, $USER->id);
+           
             if (isset($groups[0])){
-                $group = array_values($groups[0]);
+                $groups = array_values($groups[0]);
+            }
+
+            $teachersbygroup = get_users_by_capability($coursecontext, 'filter/recitactivity:teacher', '', 'u.firstname ASC', '', '', $groups, null, false);
+            $teachersbygroup = array_values($teachersbygroup);
+
+            if(!empty($teachersbygroup)){
+                return $teachersbygroup;
             }
         }
-        $coursecontext = context_course::instance($courseid);
-        $users = get_users_by_capability($coursecontext, 'filter/recitactivity:teacher', '', 'u.firstname ASC', '', '', $group, null, false);
-
-        return array_values($users);
+      
+        return $allTeachers;
     }
 
      /**
