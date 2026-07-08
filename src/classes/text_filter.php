@@ -701,7 +701,7 @@ class text_filter extends \core_filters\text_filter{
                 case 'resource':
                     $embedurl = clone $url;
                     $embedurl->param('redirect', 1);
-                    $output = html_writer::empty_tag('iframe', ['class' => 'recitautolink_embed', 'src' => $embedurl->out(false)]);
+                    $output = "<iframe class='recitautolink_embed' src='" . $embedurl->out(false) . "'></iframe>";
                     break;
                 case 'scorm':
 
@@ -717,7 +717,7 @@ class text_filter extends \core_filters\text_filter{
                         'scoid' => $sco->id,
                         'display' => 'popup',
                     ]))->out(false);
-                    $output = html_writer::empty_tag('iframe', ['class' => 'recitautolink_embed', 'src' => $scormurl]);
+                    $output = "<iframe class='recitautolink_embed' src='" . $scormurl . "'></iframe>";
                     break;
             }
             $result = str_replace($match, $output, $result);
