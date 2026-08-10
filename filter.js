@@ -201,9 +201,31 @@ M.recit.filter.autolink.loadOptionFeedback = function(){
     }
 }
 
+
+M.recit.filter.autolink.loadEmbed = function(){
+    if( M.recit.filter.autolink.state.loadEmbed){
+        return;
+    }
+
+    let elList = document.querySelectorAll('.recitautolink_embed');
+    for(let el of elList){
+        el.addEventListener('load', () => {
+            const doc = el.contentDocument || el.contentWindow.document;
+            let height = doc.body.scrollHeight;
+            if (height > 0){        
+                el.style.height = (height + 15) + 'px';
+            }else{
+                el.style.height = '70vh';//If we don't find the height, default to 70% of the screen
+            }
+        });
+        M.recit.filter.autolink.state.loadEmbed = true;
+    }
+}
+
 M.recit.filter.autolink.loadLazyOptions = function(){
     M.recit.filter.autolink.loadQRCodes();
     M.recit.filter.autolink.loadOptionFeedback();
+    M.recit.filter.autolink.loadEmbed();
 }
 
 document.addEventListener('DOMContentLoaded', function(){ 

@@ -84,7 +84,7 @@ class text_filter extends \core_filters\text_filter{
         $this->context = $context;
         $this->page = $page;
 
-        if (isset($_GET['autolinkpopup'])){
+        if (optional_param('autolinkpopup', false, PARAM_BOOL)){
             $page->set_pagelayout('popup');
         }
 
@@ -305,7 +305,7 @@ class text_filter extends \core_filters\text_filter{
 
             $messageRestricted = "";
             if ($cmdata->cmInfo->availableinfo){
-                $messageRestricted = htmlspecialchars(\core_availability\info::format_info($cmdata->cmInfo->availableinfo, $this->page->course->id));
+                $messageRestricted = s(\core_availability\info::format_info($cmdata->cmInfo->availableinfo, $this->page->course->id));
             }
             else if ($cmdata->cmInfo->__get('visible') == 0) {
                 $messageRestricted = get_string('hiddenfromstudents');
@@ -533,6 +533,9 @@ class text_filter extends \core_filters\text_filter{
                 case "f": 
                     $this->filterOptionFeedback($complement, $attributes, $match, $result);   
                     break;
+                case "e": 
+                    $this->filterEmbed($complement, $attributes, $match, $result);   
+                    break;
                 case "qr": 
                     $this->filterOptionQRCode($complement, $attributes, $match, $result);   
                     break;
@@ -694,6 +697,44 @@ class text_filter extends \core_filters\text_filter{
         }
     }
 
+    protected function filterEmbed($complement, $attributes, $match, &$result){
+        global $DB;
+        $activity = $this->get_course_activity($complement, $attributes);
+        if ($activity != null) {
+            if ($this->shouldHideIntCode($activity, $match, $result)) {
+                return;
+            }
+            $cmid = $activity->cmData->cmInfo->__get('id');
+            $url = $activity->cmData->cmInfo->__get('url');
+            $type = $activity->cmData->cmInfo->__get('modname');
+            $output = '';
+            switch ($type){
+                case 'resource':
+                    $embedurl = clone $url;
+                    $embedurl->param('redirect', 1);
+                    $output = "<iframe class='recitautolink_embed' src='" . $embedurl->out(false) . "'></iframe>";
+                    break;
+                case 'scorm':
+
+                    $cm = get_coursemodule_from_id('scorm', $cmid, 0, false, MUST_EXIST);
+
+                    // Get first launchable SCO
+                    $sco = $DB->get_record('scorm_scoes', [
+                        'scorm' => $cm->instance,
+                    ], '*', IGNORE_MULTIPLE);
+
+                    $scormurl = (new moodle_url('/mod/scorm/player.php', [
+                        'cm' => $cmid,
+                        'scoid' => $sco->id,
+                        'display' => 'popup',
+                    ]))->out(false);
+                    $output = "<iframe class='recitautolink_embed' src='" . $scormurl . "'></iframe>";
+                    break;
+            }
+            $result = str_replace($match, $output, $result);
+        }
+    }
+
     protected function filterOptionSectionLink($name, $options, $match, &$result){
         global $PAGE, $COURSE;
 
@@ -723,13 +764,12 @@ class text_filter extends \core_filters\text_filter{
 
         $availableInfo = "";
         if ($isrestricted) {
-            $courseFormat = course_get_format($section->course); // Can't assume the section is in the current course
-            $renderer = $courseFormat->get_renderer($PAGE);
-            //remove section_availability since it is deprecated 4.0
-            $availabilityoutput = new \core_courseformat\output\local\content\section\availability($courseFormat, $section);    
-            $infoMsg = $renderer->render($availabilityoutput);
-            $infoMsg = htmlspecialchars($infoMsg);
-
+            // Après (Moodle 4.x+)
+            $availabilityrenderable = new \core_courseformat\output\local\content\section\availability(course_get_format($this->page->course), $section);
+            $availabilityoutput = $this->page->get_renderer('core', 'course');
+            $infoMsg = $availabilityoutput->render($availabilityrenderable);
+            $infoMsg = s($infoMsg);
+            
             $availableInfo = sprintf("<a tabindex='0' role='button' class='btn btn-sm btn-link' data-trigger='focus' data-html='true' data-original-title='%s' data-toggle='popover' data-placement='bottom' data-content=\"%s\">", get_string('restricted'), $infoMsg);
             $availableInfo .= "<i class='fa fa-info-circle'></i>";
             $availableInfo .= "</a>";
@@ -754,12 +794,18 @@ class text_filter extends \core_filters\text_filter{
         }
 
         $h5p = $list[0];
-        $source = json_decode(base64_decode($h5p['source']));
+        $decoded = base64_decode($h5p['source'], true);
+        if ($decoded === false) {
+            return;
+        }
+        $source = json_decode($decoded);
+        if ($source === null || !isset($source->contextid, $source->itemid, $source->filename)) {
+            return;
+        }
         autoloader::register();
 
         $url = \moodle_url::make_pluginfile_url($source->contextid, 'contentbank', 'public', $source->itemid.'/'. $source->filename, null, null);
-        $url = $url->out();
-        $h5p = "<div class='h5p-placeholder' contenteditable='false'>$url</div>";
+        $h5p = html_writer::tag('div', s($url->out(false)), ['class' => 'h5p-placeholder', 'contenteditable' => 'false']);
         $result = str_replace($match, $h5p, $result);
     }
 
@@ -767,34 +813,34 @@ class text_filter extends \core_filters\text_filter{
         global $USER, $OUTPUT, $COURSE;
 
         if ($complement == "user.firstname") {
-            $result = str_replace($match, $USER->firstname, $result);
+            $result = str_replace($match, s($USER->firstname), $result);
         } else if ($complement == "user.lastname") {
-            $result = str_replace($match, $USER->lastname, $result);
+            $result = str_replace($match, s($USER->lastname), $result);
         } else if ($complement == "user.email") {
-            $result = str_replace($match, $USER->email, $result);
+            $result = str_replace($match, s($USER->email), $result);
         } else if ($complement == "user.picture") {
             $picture = $OUTPUT->user_picture($USER, array('courseid' => $this->page->course->id, 'link' => false));
             $result = str_replace($match, $picture, $result);
         } else if ($complement == "course.shortname") {
-            $result = str_replace($match, $COURSE->shortname, $result);
+            $result = str_replace($match, s($COURSE->shortname), $result);
         } else if ($complement == "course.fullname") {
-            $result = str_replace($match, $COURSE->fullname, $result);
+            $result = str_replace($match, s($COURSE->fullname), $result);
         } else {
-            if (empty($this->teacherslist) && substr($complement, 0, 8) == "teacher1"){                            
-                $result = str_replace($match, "($match <a tabindex='0' role='button' class='btn btn-sm btn-link' data-html='true'  data-toggle='popover' data-placement='bottom' 
+            if (empty($this->teacherslist) && substr($complement, 0, 8) == "teacher1"){
+                $result = str_replace($match, "($match <a tabindex='0' role='button' class='btn btn-sm btn-link' data-html='true'  data-toggle='popover' data-placement='bottom'
                                                         data-trigger='focus' data-content='".get_string('noteacheringroup','filter_recitactivity')."' data-original-title=''><i class='fa fa-info-circle'></i></a>", $result);
             }
             foreach ($this->teacherslist as $index => $teacher) {
                 $nb = $index + 1;
                 if ($complement == "teacher$nb.firstname") {
-                    $result = str_replace($match, $teacher->firstname, $result);
+                    $result = str_replace($match, s($teacher->firstname), $result);
                 } else if ($complement == "teacher$nb.lastname") {
-                    $result = str_replace($match, $teacher->lastname, $result);
+                    $result = str_replace($match, s($teacher->lastname), $result);
                 } else if ($complement == "teacher$nb.email") {
-                    $result = str_replace($match, $teacher->email, $result);
+                    $result = str_replace($match, s($teacher->email), $result);
                 } else if ($complement == "teacher$nb.picture") {
                     $picture = $OUTPUT->user_picture($teacher, array('courseid' => $this->page->course->id,
-                        'link' => false));
+                        'link' => false,  'size'  => 45, 'class' => 'userpicture rounded-circle'));
                     $result = str_replace($match, $picture, $result);
                 }
             }
@@ -831,7 +877,7 @@ class text_filter extends \core_filters\text_filter{
         if($cmCompletion == self::COMPLETION_NOT_COMPLETED){
             $dismissButton = '<button class="btn btn-sm text-nowrap btn-outline-secondary ml-2" data-action="toggle-manual-completion" data-toggletype="manual:mark-done" 
             data-withavailability="1" data-cmid="'.$cmData->cmInfo->id.'"  data-activityname="Ignore"  
-            title='.get_string('dismissMsg','filter_recitactivity').'  aria-label='.get_string('dismissMsg','filter_recitactivity').'>'.get_string('dismissMsg','filter_recitactivity').'</button>';
+            title="'.get_string('dismissMsg','filter_recitactivity').'" aria-label="'.get_string('dismissMsg','filter_recitactivity').'">'.get_string('dismissMsg','filter_recitactivity').'</button>';
         }
 
         if (isset($attributes['popup'])){
@@ -897,8 +943,11 @@ class text_filter extends \core_filters\text_filter{
         $activity = $this->get_course_activity($complement, $attributes);
         if ($activity != null) {
             if(!$this->shouldHideIntCode($activity, $match, $result)){
-                $attrWidth = (isset($attributes['qrWidth']) ? "data-width='" . $attributes['qrWidth'] . "'" : '');
-                $html = "<div data-qrcode-url='{$activity->output->url}' $attrWidth></div>";
+                $qrattrs = ['data-qrcode-url' => $activity->output->url->out(false)];
+                if (isset($attributes['qrWidth'])) {
+                    $qrattrs['data-width'] = $attributes['qrWidth'];
+                }
+                $html = html_writer::empty_tag('div', $qrattrs);
                 $result = str_replace($match, $html, $result);
             }
         }
