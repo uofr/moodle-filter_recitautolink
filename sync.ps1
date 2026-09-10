@@ -1,5 +1,5 @@
 $from = "moodle-filter_recitautolink/src/*"
-$to = "shared/recitfad3/filter/recitactivity/"
+$to = "shared/recitfad4/public/filter/recitactivity/"
 $source = "./src";
 
 try {
