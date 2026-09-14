@@ -35,3 +35,7 @@ Represents the separator character used in the filter. If the character is <b>/<
 
 ## Non-standard post-installation steps
  After installing this plugin, it is necessary to place it before the default Activity linking filter.
+
+
+## Marketplace Moodle
+This plugin is also available on the **Moodle Plugin Marketplace**: [https://marketplace.moodle.com/plugins/2678](https://marketplace.moodle.com/plugins/2678)
