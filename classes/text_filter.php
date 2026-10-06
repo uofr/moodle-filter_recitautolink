@@ -312,7 +312,7 @@ class text_filter extends \core_filters\text_filter{
             }
             
             if (strlen($messageRestricted) > 0) {
-                $restrictioninfo .= "<a tabindex='0' role='button' class='btn btn-sm btn-link' data-toggle='popover' data-trigger='focus' data-html='true' data-content=\"$messageRestricted\" data-original-title='".get_string('restricted')."' data-placement='bottom' >";
+                $restrictioninfo .= "<a tabindex='0' role='button' class='btn btn-sm btn-link' data-bs-toggle='popover' data-bs-trigger='focus' data-bs-html='true' data-bs-content=\"$messageRestricted\" data-bs-title='".get_string('restricted')."' data-bs-placement='bottom' >";
                 $restrictioninfo .= "<i class='fa fa-info-circle'></i>";
                 $restrictioninfo .= "</a>";
             }
@@ -770,7 +770,7 @@ class text_filter extends \core_filters\text_filter{
             $infoMsg = $availabilityoutput->render($availabilityrenderable);
             $infoMsg = s($infoMsg);
             
-            $availableInfo = sprintf("<a tabindex='0' role='button' class='btn btn-sm btn-link' data-trigger='focus' data-html='true' data-original-title='%s' data-toggle='popover' data-placement='bottom' data-content=\"%s\">", get_string('restricted'), $infoMsg);
+            $availableInfo = sprintf("<a tabindex='0' role='button' class='btn btn-sm btn-link' data-bs-trigger='focus' data-bs-html='true' data-bs-title='%s' data-bs-toggle='popover' data-bs-placement='bottom' data-bs-content=\"%s\">", get_string('restricted'), $infoMsg);
             $availableInfo .= "<i class='fa fa-info-circle'></i>";
             $availableInfo .= "</a>";
             $class .= " disabled";
@@ -827,8 +827,8 @@ class text_filter extends \core_filters\text_filter{
             $result = str_replace($match, s($COURSE->fullname), $result);
         } else {
             if (empty($this->teacherslist) && substr($complement, 0, 8) == "teacher1"){
-                $result = str_replace($match, "($match <a tabindex='0' role='button' class='btn btn-sm btn-link' data-html='true'  data-toggle='popover' data-placement='bottom'
-                                                        data-trigger='focus' data-content='".get_string('noteacheringroup','filter_recitactivity')."' data-original-title=''><i class='fa fa-info-circle'></i></a>", $result);
+                $result = str_replace($match, "($match <a tabindex='0' role='button' class='btn btn-sm btn-link' data-bs-html='true'  data-bs-toggle='popover' data-bs-placement='bottom'
+                                                        data-bs-trigger='focus' data-bs-content='".get_string('noteacheringroup','filter_recitactivity')."' data-bs-title=''><i class='fa fa-info-circle'></i></a>", $result);
             }
             foreach ($this->teacherslist as $index => $teacher) {
                 $nb = $index + 1;

@@ -60,9 +60,8 @@ M.recit.filter.autolink.Popup = class {
             inner.appendChild(header);
             this.title = document.createElement('h3');
             let btn = document.createElement('button');
-            btn.classList.add('close');
-            btn.innerHTML = '<span aria-hidden="true">&times;</span>';
-            btn.setAttribute('data-dismiss', 'modal');
+            btn.classList.add('btn-close');
+            btn.setAttribute('data-bs-dismiss', 'modal');
             btn.onclick = this.destroy.bind(this);
             header.appendChild(this.title);
             header.appendChild(btn);
@@ -94,7 +93,7 @@ M.recit.filter.autolink.Popup = class {
 
         this.backdrop = document.createElement('div');
         this.backdrop.classList.add('modal-backdrop', 'fade', 'show');
-        this.backdrop.setAttribute('data-backdrop', 'static');
+        this.backdrop.setAttribute('data-bs-backdrop', 'static');
         document.body.appendChild(this.backdrop);
       }
 
